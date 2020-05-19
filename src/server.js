@@ -60,10 +60,99 @@ const resolvers = {
           parentId: null
         }
       });
+    },
+    ticket: async (_, { id }) => {
+      return models.Ticket.findOne({
+        where: {
+          id
+        }
+      });
     }
   },
-  Ticket: {},
-  Mutation: {}
+  Ticket: {
+    children: async ({ id }) => {
+      return models.Ticket.findAll({
+        where: {
+          parentId: id
+        }
+      });
+    }
+  },
+  Mutation: {
+    createTicket: async (_, { title, isCompleted }) => {
+      return models.Ticket.create({ title, isCompleted });
+    },
+    updateTicket: async (_, { id, title }) => {
+      await models.Ticket.update({ title }, {
+        where: {
+          id
+        }
+      });
+      return models.Ticket.findOne({
+        where: {
+          id
+        }
+      });
+    },
+    toggleTicket: async (_, { id, isCompleted }) => {
+      await models.Ticket.update({ isCompleted }, {
+        where: {
+          id
+        }
+      });
+      return models.Ticket.findOne({
+        where: {
+          id
+        }
+      });
+    },
+    removeTicket: async (_, { id }) => {
+      await models.Ticket.destroy({
+        where: {
+          id
+        }
+      });
+      return true;
+    },
+    addChildrenToTicket: async (_, { parentId, childrenIds }) => {
+      await Promise.all(childrenIds.map(async child => {
+        await models.Ticket.update({ parentId }, {
+          where: {
+            id: child
+          }
+        })
+      }));
+      return models.Ticket.findOne({
+        where: {
+          id: parentId
+        }
+      });
+    },
+    setParentOfTicket: async (_, { parentId, childId }) => {
+      await models.Ticket.update({ parentId }, {
+        where: {
+          id: childId
+        }
+      });
+      return models.Ticket.findOne({
+        where: {
+          id: childId
+        }
+      });
+    },
+    removeParentFromTicket: async (_, { id }) => {
+      await models.Ticket.update({ parentId: null }, {
+        where: {
+          id
+        }
+      });
+      return models.Ticket.findOne({
+        where: {
+          id
+        }
+      });
+    }
+  }
 };
 
 const server = new ApolloServer({
